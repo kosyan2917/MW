@@ -9,12 +9,15 @@ from selenium.webdriver.common.by import By
 import requests
 import undetected_chromedriver as uc
 import queue
-
+from MailParser import MailParser
 
 class GamerBot:
 
     def __init__(self, options, acc_name, login, password):
         self.forbidden = []
+        self.unit_dictionary = ['/_nuxt/img/wolf.de9bc8b.png', '/_nuxt/img/ant.5cc4b20.png',
+                                '/_nuxt/img/skunk.b941207.png', '/_nuxt/img/raccoon.72fae59.png',
+                                '/_nuxt/img/elephantor.94bc483.png', '/_nuxt/img/hamster.9100eb1.png']
         self.options = options
         self.driver = uc.Chrome(chrome_options=options)
         self.actions = ActionChains(self.driver)
@@ -24,8 +27,11 @@ class GamerBot:
         self.login = login
         self.actions = ActionChains(self.driver)
         self.stop = False
+        self.mwm = 0
         self.units = {}
+        self.parser = MailParser()
         self.startgame()
+        
 
     def startgame(self):
         self.driver.get("https://game2.metal-war.com/")
@@ -67,6 +73,7 @@ class GamerBot:
             except:
                 pass
         flag = True
+        
         while flag:
             try:
                 windows = self.driver.window_handles
@@ -94,59 +101,103 @@ class GamerBot:
             except:
                 pass
         flag = True
+        time.sleep(5)
+        if len(self.driver.window_handles)!=1:
+            while flag:
+                try:
+                    windows = self.driver.window_handles
+                    for window in windows:
+                        self.driver.switch_to.window(window)
+                        element = self.driver.find_elements_by_xpath('//input')
+                        if element:
+                            element[0].click()
+                            element[0].clear()
+                            element[0].send_keys(self.parser.get_email_code())
+                            element[0].send_keys(u'\ue007')
+                            time.sleep(0.5)
+                            flag = False
+                            self.driver.switch_to_window(self.mainWindowHandle)
+                            break
+                except Exception:
+                    pass
         element = WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.XPATH,
                                                                                        '//div[@class=\'repair info_button\']')))
         time.sleep(2)
         element.click()
+        
         element = WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.XPATH,
-                                                                                       '//div[@class=\'tab\']')))
-        time.sleep(2)
-        element.click()
-        time.sleep(10)
+                                                                                       '//div[@class=\'tabs\']')))
+        tabs = element.find_elements_by_xpath(".//div")
+        print(tabs)
+        for tab in tabs:
+            print(tab.text)
+        tabs[4].click()
+        WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.XPATH,
+                                                                             '//input')))
+        checkboxes = self.driver.find_elements_by_xpath('//input')
+        checkboxes[1].click()
+        checkboxes[2].click()
+        tabs[1].click()
+        
         x = threading.Thread(target=self.captcha_thread)
         while True:
-            self.units = self.get_units()
+                self.units = self.get_units()
             #print(self.units)
-            try:
+            #try:
+                repair = []
+                raid = []
                 for unit in self.units:
-                    self.driver.execute_script("arguments[0].scrollIntoView();", unit)
                     # if self.units[unit][2] == '250/250':
                     #   continue
-                    if self.units[unit][1].find_element_by_xpath('.//*').text == 'MINE' or self.units[unit][1].find_element_by_xpath('.//*').text == 'RAID':
-                        self.units[unit][1].click()
-                    time.sleep(8)
+                    if self.units[unit]['raid'].find_element_by_xpath('.//*').text == 'MINE' or self.units[unit]['raid'].find_element_by_xpath('.//*').text == 'RAID':
+                        raid.append(unit)
                     WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.XPATH, '//div[@class=\'units_line\']')))
-                    if self.units[unit][2] == 0:
-                        self.units[unit][0].click()
-                    time.sleep(2)
-            except Exception as err:
-                print(err)
+                    if self.units[unit]['hp'] == 0:
+                        repair.append(unit)
+                for unit in repair:
+                    if self.mwm <= self.units[unit]['cost']:
+                        continue
+                    self.driver.execute_script("arguments[0].scrollIntoView();", unit)
+                    if not self.units[unit]['token'][0].find_element_by_xpath('.//input').is_selected() and not self.units[unit]['pioneer'][0].find_element_by_xpath('.//input').is_selected():
+                        if self.units[unit]['token'][1] != 0:
+                            self.units[unit]['token'][0].click()
+                        else:
+                            self.units[unit]['pioneer'][0].click()
+                    (self.units[unit]['repair']).click()
+                    time.sleep(3)
+                for unit in raid:
+                    if unit in repair:
+                        continue
+                    self.driver.execute_script("arguments[0].scrollIntoView();", unit)
+                    self.units[unit]['raid'].click()
+                    time.sleep(8)
+                time.sleep(20)
+            #except Exception as err:
+             #   print(err)
 
     def get_units(self):
+        self.mwm = int(self.driver.find_element_by_xpath('.//div[@class=\'shards_count\']').text.split()[0])
         units = {}
-        elements = self.driver.find_element_by_xpath('//div[@class=\'units_container\']')
-        '''elements = WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.XPATH,
+        #elements = self.driver.find_element_by_xpath('//div[@class=\'units_container\']')
+        elements = WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.XPATH,
                                                                                         '//div[@class=\'units_container\']')))
-        WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.XPATH, '//div[@class=\'units_line\']')))'''
+        WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.XPATH, '//div[@class=\'units_line\']')))
         elements = elements.find_elements_by_xpath('//div[@class=\'units_line\']')
         for element in elements:
-            flag = 1
             try:
                 unit_type = element.find_element_by_xpath('.//img').get_attribute('src')
-                for fbunit in self.forbidden:
-                    if unit_type.find(fbunit)!=-1:
-                        flag = 0
-                if not flag:
-                    continue
                 hp = element.find_element_by_xpath('.//div[@class=\'hp_text\']').text
                 button_repair = element.find_element_by_xpath('.//div[@class=\'button raid\']')
                 button_mine = element.find_element_by_xpath('(.//div[@class=\'units_action\'])[2]') \
                     .find_element_by_xpath('.//div[@class=\'button mine\']| .//div[@class=\'button raid\']')
+                switches = element.find_elements_by_xpath('.//label')
             except Exception:
                 continue
             if hp == '':
                 continue
-            units[element] = [button_repair, button_mine, int(hp.split('/')[0])]
+            units[element] = {'repair': button_repair, 'raid': button_mine, 'hp': int(hp.split('/')[0]),
+                              'cost': int(hp.split('/')[1])/2, 'name': unit_type, 'pioneer': [switches[2], int(switches[2].text)],
+                              'token': [switches[3], int(switches[3].text)]}
         return units
 
     def captcha_thread(self):
