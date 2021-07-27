@@ -14,7 +14,7 @@ from MailParser import MailParser
 class GamerBot:
 
     def __init__(self, options, acc_name, login, password):
-        self.forbidden = []
+        self.forbidden = ['skunk']
         self.unit_dictionary = ['/_nuxt/img/wolf.de9bc8b.png', '/_nuxt/img/ant.5cc4b20.png',
                                 '/_nuxt/img/skunk.b941207.png', '/_nuxt/img/raccoon.72fae59.png',
                                 '/_nuxt/img/elephantor.94bc483.png', '/_nuxt/img/hamster.9100eb1.png']
