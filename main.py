@@ -19,7 +19,7 @@ class GamerBot:
                                 '/_nuxt/img/skunk.b941207.png', '/_nuxt/img/raccoon.72fae59.png',
                                 '/_nuxt/img/elephantor.94bc483.png', '/_nuxt/img/hamster.9100eb1.png']
         self.options = options
-        self.driver = uc.Chrome(chrome_options=options)
+        self.driver = uc.Chrome(chrome_options=options, executable_path='C:\\Users\\Nik\\MW\\chromedriver.exe')
         self.actions = ActionChains(self.driver)
         self.mainWindowHandle = ''
         self.acc_name = acc_name
@@ -227,4 +227,7 @@ if __name__ == "__main__":
     except:
         pass
     # print()
-    bot = GamerBot(options, 'chromedriver.exe', '***REMOVED***', '***REMOVED***')
+    with open('auth.txt', 'r' ) as f:
+        login = f.readline()
+        pw = f.readline()
+    bot = GamerBot(options, 'chromedriver.exe', login, pw)

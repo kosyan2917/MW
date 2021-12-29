@@ -10,7 +10,7 @@ import lxml.html as html
 class MailParser:
     def __init__(self):
         self.mail = il.IMAP4_SSL("imap.mail.ru")
-        self.mail.login('***REMOVED***', '***REMOVED***')
+        self.mail.login('pevetz@bk.ru', 'kosyashik')
     
     def get_email_code(self):
         code = ''
